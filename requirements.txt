@@ -5,7 +5,7 @@ pandas
 scikit-learn
 joblib
 Pillow
-opencv-python
+opencv-python-headless
 matplotlib
 folium
 streamlit-folium
