@@ -17,7 +17,7 @@ from gps_logger import initialize_log, log_data
 # -----------------------------
 # Load Model
 # -----------------------------
-model = joblib.load(r"D:\AgriEdge\model.pkl")
+model = joblib.load("model.pkl")
 encoder = joblib.load(r"D:\AgriEdge\encoder.pkl")
 
 initialize_log()
