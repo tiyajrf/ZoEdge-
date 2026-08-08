@@ -23,11 +23,11 @@ encoder = joblib.load("encoder.pkl")
 initialize_log()
 
 st.set_page_config(
-    page_title="AgriEdge",
+    page_title="ZoEdge",
     page_icon="🌾",
     layout="centered"
 )
-st.title("🌾 AgriEdge")
+st.title("🌾 ZoEdge")
 st.subheader("Indigenous Edge AI Drone Platform for Precision Agriculture for NorthEast India")
 st.write("AI-based crop disease detection, autonomous decision support and GPS mission logging.")
 
