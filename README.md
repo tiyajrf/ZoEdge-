@@ -1,6 +1,6 @@
-# AgriEdge
+# ZoEdge
 
-AgriEdge is an Edge AI-based precision agriculture prototype for autonomous drone which helps to identify diseased plants, coordinates, and if precision spraying is required or not. 
+ZoEdge is an Edge AI-based precision agriculture prototype for autonomous drone which helps to identify diseased plants, coordinates, and if precision spraying is required or not. 
 
 ## Features
 - Crop disease classification using TensorFlow
