@@ -14,25 +14,22 @@ def get_action(predicted_class, confidence):
         return {
             "Status": "Healthy",
             "Action": "Continue Monitoring",
-            "Treatment": "No Treatment Required",
             "Priority": "Low"
         }
 
-    # High-confidence disease detection
-    elif confidence >= 85:
+    # High enough confidence for precision-treatment recommendation
+    elif confidence >= 65:
         return {
             "Status": "Disease Detected",
             "Action": "Precision Spray Required",
-            "Treatment": "Targeted Treatment Recommended",
             "Priority": "High"
         }
 
     # Moderate confidence
-    elif confidence >= 60:
+    elif confidence >= 50:
         return {
             "Status": "Possible Disease",
             "Action": "Capture More Images",
-            "Treatment": "Hold Spray Decision",
             "Priority": "Medium"
         }
 
@@ -41,16 +38,16 @@ def get_action(predicted_class, confidence):
         return {
             "Status": "Uncertain",
             "Action": "Capture More Images",
-            "Treatment": "No Spray",
             "Priority": "Low"
         }
 
 
+# Test
 if __name__ == "__main__":
 
     result = get_action(
-        "Tomato___Late_blight",
-        91
+        "Pepper__bell___Bacterial_spot",
+        67
     )
 
     print(result)
