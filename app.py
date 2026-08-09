@@ -31,10 +31,8 @@ st.set_page_config(
 
 @st.cache_resource
 def load_model():
-
     model = joblib.load("model.pkl")
     encoder = joblib.load("encoder.pkl")
-
     return model, encoder
 
 
@@ -144,29 +142,65 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # EXTRACT CROP AND DISEASE
+            # CROP + DISEASE DISPLAY
             # =================================================
 
-            parts = predicted_class.split(
-                "___",
-                1
-            )
+            if predicted_class.startswith("Potato"):
 
-            crop = parts[0].replace(
-                "_",
-                " "
-            ).strip()
+                crop = "Potato"
 
-            if len(parts) > 1:
+                disease = predicted_class.replace(
+                    "Potato___",
+                    "",
+                    1
+                )
 
-                disease = parts[1].replace(
-                    "_",
-                    " "
-                ).strip()
+
+            elif predicted_class.startswith("Pepper__bell"):
+
+                crop = "Pepper Bell"
+
+                disease = predicted_class.replace(
+                    "Pepper__bell___",
+                    "",
+                    1
+                )
+
+
+            elif predicted_class.startswith("Tomato"):
+
+                crop = "Tomato"
+
+                # Tomato Yellow Leaf Curl Virus
+                if "Yellow_Leaf" in predicted_class:
+
+                    disease = "Yellow Leaf Curl Virus"
+
+                # Tomato Mosaic Virus
+                elif "mosaic" in predicted_class.lower():
+
+                    disease = "Mosaic Virus"
+
+                else:
+
+                    disease = predicted_class.replace(
+                        "Tomato___",
+                        "",
+                        1
+                    )
+
 
             else:
 
-                disease = "Unknown"
+                crop = "Unknown"
+                disease = predicted_class
+
+
+            # Clean remaining underscores
+            disease = disease.replace(
+                "_",
+                " "
+            ).strip()
 
 
             # =================================================
@@ -189,7 +223,7 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # LOG MISSION
+            # GPS / MISSION LOGGING
             # =================================================
 
             log_data(
@@ -205,19 +239,15 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # RESULTS
+            # PREDICTION RESULT
             # =================================================
 
             st.success(
-                "✅ Prediction Completed"
+                " Prediction Completed"
             )
 
 
-            # =================================================
-            # PREDICTION
-            # =================================================
-
-            st.write("### 🌿 Prediction")
+            st.write("###  Prediction")
 
             col1, col2 = st.columns(2)
 
@@ -233,10 +263,10 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # CONFIDENCE
+            # MODEL CONFIDENCE
             # =================================================
 
-            st.write("### 🎯 Model Confidence")
+            st.write("###  Model Confidence")
 
             st.progress(
                 min(int(confidence), 100)
@@ -251,7 +281,7 @@ if uploaded_file is not None:
             # DRONE DECISION
             # =================================================
 
-            st.write("### 🚁 Drone Decision")
+            st.write("###  Drone Decision")
 
             status = decision["Status"]
 
@@ -298,14 +328,14 @@ if uploaded_file is not None:
             # =================================================
 
             st.write(
-                "### 🎯 Precision Agriculture"
+                "### Precision Agriculture"
             )
 
 
             if status == "Disease Detected":
 
                 st.success(
-                    "🎯 Targeted treatment recommended "
+                    "Targeted treatment recommended "
                     "for the detected disease zone."
                 )
 
