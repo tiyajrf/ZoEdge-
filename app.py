@@ -9,113 +9,333 @@ import streamlit as st
 import joblib
 import numpy as np
 from PIL import Image
-import tempfile
 
 from decision_engine import get_action
 from gps_logger import initialize_log, log_data
 
-# -----------------------------
-# Load Model
-# -----------------------------
-model = joblib.load("model.pkl")
-encoder = joblib.load("encoder.pkl")
 
-initialize_log()
+# =========================================================
+# PAGE CONFIGURATION
+# =========================================================
 
 st.set_page_config(
     page_title="ZoEdge",
     page_icon="🌾",
     layout="centered"
 )
-st.title("🌾 ZoEdge")
-st.subheader("Indigenous Edge AI Drone Platform for Precision Agriculture for NorthEast India")
-st.write("AI-based crop disease detection, autonomous decision support and GPS mission logging.")
 
+
+# =========================================================
+# LOAD MODEL
+# =========================================================
+
+@st.cache_resource
+def load_model():
+    model = joblib.load("model.pkl")
+    encoder = joblib.load("encoder.pkl")
+    return model, encoder
+
+
+model, encoder = load_model()
+
+
+# =========================================================
+# INITIALIZE GPS LOG
+# =========================================================
+
+initialize_log()
+
+
+# =========================================================
+# HEADER
+# =========================================================
+
+st.title("🌾 ZoEdge")
+
+st.subheader(
+    "Indigenous Edge AI Drone Platform for Precision Agriculture "
+    "for Northeast India"
+)
+
+st.write(
+    "AI-based crop disease detection, autonomous decision support "
+    "and GPS mission logging."
+)
+
+
+# =========================================================
+# IMAGE UPLOAD
+# =========================================================
 
 uploaded_file = st.file_uploader(
     "Upload Crop Image",
     type=["jpg", "jpeg", "png"]
 )
 
+
 if uploaded_file is not None:
+
+    # -----------------------------------------------------
+    # LOAD IMAGE
+    # -----------------------------------------------------
 
     image = Image.open(uploaded_file).convert("RGB")
 
-    st.image(image, caption="Uploaded Image", width=400)
+    st.image(
+        image,
+        caption="Uploaded Crop Image",
+        width=400
+    )
 
-    if st.button("Predict"):
 
-        img = image.resize((64,64))
+    # -----------------------------------------------------
+    # PREDICT BUTTON
+    # -----------------------------------------------------
 
-        img_array = np.array(img).flatten().reshape(1,-1)
+    if st.button("🔍 Predict Disease", use_container_width=True):
 
-        prediction = model.predict(img_array)
+        try:
 
-        predicted_class = encoder.inverse_transform(prediction)[0]
+            # =================================================
+            # IMAGE PREPROCESSING
+            # =================================================
 
-        if hasattr(model, "predict_proba"):
+            img = image.resize((64, 64))
 
-            probability = model.predict_proba(img_array)
+            img_array = np.array(img, dtype=np.float32)
 
-            confidence = float(np.max(probability)*100)
+            # Flatten image exactly as used by the current model
+            img_array = img_array.flatten().reshape(1, -1)
 
-        else:
 
-            confidence = 0.0
+            # =================================================
+            # MODEL PREDICTION
+            # =================================================
 
-        decision = get_action(
-            predicted_class,
-            confidence
-        )
+            prediction = model.predict(img_array)
 
-        latitude = 23.7271
-        longitude = 92.7176
+            predicted_class = encoder.inverse_transform(
+                prediction
+            )[0]
 
-        log_data(
-            "WP1",
-            latitude,
-            longitude,
-            predicted_class,
-            round(confidence,2),
-            decision["Status"],
-            decision["Action"],
-            decision["Priority"]
-        )
+            predicted_class = str(predicted_class)
 
-        st.success("Prediction Completed")
 
-        st.write("### Prediction")
+            # =================================================
+            # CONFIDENCE
+            # =================================================
 
-        crop = predicted_class.split("___")[0].replace("_", " ")
-        disease = predicted_class.split("___")[1].replace("_", " ")
+            if hasattr(model, "predict_proba"):
 
-        st.write("**Crop:**", crop)
-        st.write("**Disease:**", disease)
+                probability = model.predict_proba(img_array)
 
-        if confidence >= 10:
-          st.success(f"Confidence: {confidence:.2f}%")
-        else:
-          st.warning(f"Confidence: {confidence:.2f}%")
+                confidence = float(
+                    np.max(probability) * 100
+                )
 
-        st.write("### Drone Decision")
+            else:
 
-        if decision["Status"] == "Healthy":
-          st.success("🟢 Healthy Crop")
+                confidence = 0.0
 
-        elif decision["Status"] == "Disease Detected":
-          st.error("🔴 Disease Detected")
 
-        else:
-          st.warning("🟡 Uncertain Prediction")
+            # =================================================
+            # SAFELY EXTRACT CROP + DISEASE
+            # =================================================
 
-        st.write("**Recommended Action:**", decision["Action"])
+            parts = predicted_class.split("___", 1)
 
-        st.write("**Priority:**", decision["Priority"])
+            crop = parts[0].replace("_", " ").strip()
 
-        st.write("### GPS")
+            if len(parts) > 1:
+                disease = parts[1].replace("_", " ").strip()
+            else:
+                disease = "Unknown"
 
-        st.write("Latitude :", latitude)
 
-        st.write("Longitude :", longitude)
+            # =================================================
+            # DECISION ENGINE
+            # =================================================
 
-        st.success("Mission Logged Successfully")
+            decision = get_action(
+                predicted_class,
+                confidence
+            )
+
+
+            # =================================================
+            # GPS
+            # =================================================
+
+            # Demonstration coordinates
+            latitude = 23.7271
+            longitude = 92.7176
+
+
+            # =================================================
+            # LOG MISSION DATA
+            # =================================================
+
+            log_data(
+                "WP1",
+                latitude,
+                longitude,
+                predicted_class,
+                round(confidence, 2),
+                decision["Status"],
+                decision["Action"],
+                decision["Priority"]
+            )
+
+
+            # =================================================
+            # RESULTS
+            # =================================================
+
+            st.success("✅ Prediction Completed")
+
+
+            # -------------------------------------------------
+            # PREDICTION
+            # -------------------------------------------------
+
+            st.write("### 🌿 Prediction")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.write("**Crop**")
+                st.info(crop)
+
+            with col2:
+                st.write("**Disease**")
+                st.warning(disease)
+
+
+            # -------------------------------------------------
+            # CONFIDENCE
+            # -------------------------------------------------
+
+            st.write("### 🎯 Model Confidence")
+
+            st.progress(
+                min(int(confidence), 100)
+            )
+
+            st.write(
+                f"**Confidence: {confidence:.2f}%**"
+            )
+
+
+            # -------------------------------------------------
+            # DRONE DECISION
+            # -------------------------------------------------
+
+            st.write("### 🚁 Drone Decision")
+
+
+            status = decision["Status"]
+
+            if status == "Healthy":
+
+                st.success(
+                    "🟢 Healthy Crop"
+                )
+
+            elif status == "Disease Detected":
+
+                st.error(
+                    "🔴 Disease Detected"
+                )
+
+            else:
+
+                st.warning(
+                    "🟡 Uncertain / Possible Disease"
+                )
+
+
+            st.write(
+                "**Status:**",
+                decision["Status"]
+            )
+
+            st.write(
+                "**Recommended Action:**",
+                decision["Action"]
+            )
+
+            st.write(
+                "**Priority:**",
+                decision["Priority"]
+            )
+
+
+            # -------------------------------------------------
+            # PRECISION AGRICULTURE
+            # -------------------------------------------------
+
+            st.write("### 🎯 Precision Agriculture")
+
+            if status == "Disease Detected":
+
+                st.success(
+                    "🎯 Targeted treatment recommended for "
+                    "the detected disease zone."
+                )
+
+                st.write(
+                    "The detected location can be used as a "
+                    "precision-treatment waypoint."
+                )
+
+                st.write(
+                    "**Treatment Mode:** Precision Spray"
+                )
+
+            elif status == "Healthy":
+
+                st.info(
+                    "No treatment required. Continue monitoring."
+                )
+
+            else:
+
+                st.warning(
+                    "Insufficient confidence for treatment. "
+                    "Capture additional images before spraying."
+                )
+
+
+            # -------------------------------------------------
+            # GPS
+            # -------------------------------------------------
+
+            st.write("### 📍 GPS Mission Data")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.metric(
+                    "Latitude",
+                    f"{latitude:.4f}"
+                )
+
+            with col2:
+                st.metric(
+                    "Longitude",
+                    f"{longitude:.4f}"
+                )
+
+
+            st.success(
+                "📡 Mission Logged Successfully"
+            )
+
+
+        except Exception as e:
+
+            st.error(
+                "Prediction failed."
+            )
+
+            st.exception(e)
