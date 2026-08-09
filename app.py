@@ -31,8 +31,10 @@ st.set_page_config(
 
 @st.cache_resource
 def load_model():
+
     model = joblib.load("model.pkl")
     encoder = joblib.load("encoder.pkl")
+
     return model, encoder
 
 
@@ -75,10 +77,6 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is not None:
 
-    # -----------------------------------------------------
-    # LOAD IMAGE
-    # -----------------------------------------------------
-
     image = Image.open(uploaded_file).convert("RGB")
 
     st.image(
@@ -88,11 +86,14 @@ if uploaded_file is not None:
     )
 
 
-    # -----------------------------------------------------
-    # PREDICT BUTTON
-    # -----------------------------------------------------
+    # =====================================================
+    # PREDICT
+    # =====================================================
 
-    if st.button("🔍 Predict Disease", use_container_width=True):
+    if st.button(
+        "🔍 Predict Disease",
+        use_container_width=True
+    ):
 
         try:
 
@@ -102,9 +103,11 @@ if uploaded_file is not None:
 
             img = image.resize((64, 64))
 
-            img_array = np.array(img, dtype=np.float32)
+            img_array = np.array(
+                img,
+                dtype=np.float32
+            )
 
-            # Flatten image exactly as used by the current model
             img_array = img_array.flatten().reshape(1, -1)
 
 
@@ -127,7 +130,9 @@ if uploaded_file is not None:
 
             if hasattr(model, "predict_proba"):
 
-                probability = model.predict_proba(img_array)
+                probability = model.predict_proba(
+                    img_array
+                )
 
                 confidence = float(
                     np.max(probability) * 100
@@ -139,16 +144,28 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # SAFELY EXTRACT CROP + DISEASE
+            # EXTRACT CROP AND DISEASE
             # =================================================
 
-            parts = predicted_class.split("___", 1)
+            parts = predicted_class.split(
+                "___",
+                1
+            )
 
-            crop = parts[0].replace("_", " ").strip()
+            crop = parts[0].replace(
+                "_",
+                " "
+            ).strip()
 
             if len(parts) > 1:
-                disease = parts[1].replace("_", " ").strip()
+
+                disease = parts[1].replace(
+                    "_",
+                    " "
+                ).strip()
+
             else:
+
                 disease = "Unknown"
 
 
@@ -172,7 +189,7 @@ if uploaded_file is not None:
 
 
             # =================================================
-            # LOG MISSION DATA
+            # LOG MISSION
             # =================================================
 
             log_data(
@@ -191,29 +208,33 @@ if uploaded_file is not None:
             # RESULTS
             # =================================================
 
-            st.success("✅ Prediction Completed")
+            st.success(
+                "✅ Prediction Completed"
+            )
 
 
-            # -------------------------------------------------
+            # =================================================
             # PREDICTION
-            # -------------------------------------------------
+            # =================================================
 
             st.write("### 🌿 Prediction")
 
             col1, col2 = st.columns(2)
 
             with col1:
+
                 st.write("**Crop**")
                 st.info(crop)
 
             with col2:
+
                 st.write("**Disease**")
                 st.warning(disease)
 
 
-            # -------------------------------------------------
+            # =================================================
             # CONFIDENCE
-            # -------------------------------------------------
+            # =================================================
 
             st.write("### 🎯 Model Confidence")
 
@@ -226,14 +247,14 @@ if uploaded_file is not None:
             )
 
 
-            # -------------------------------------------------
+            # =================================================
             # DRONE DECISION
-            # -------------------------------------------------
+            # =================================================
 
             st.write("### 🚁 Drone Decision")
 
-
             status = decision["Status"]
+
 
             if status == "Healthy":
 
@@ -241,11 +262,13 @@ if uploaded_file is not None:
                     "🟢 Healthy Crop"
                 )
 
+
             elif status == "Disease Detected":
 
                 st.error(
                     "🔴 Disease Detected"
                 )
+
 
             else:
 
@@ -270,33 +293,39 @@ if uploaded_file is not None:
             )
 
 
-            # -------------------------------------------------
+            # =================================================
             # PRECISION AGRICULTURE
-            # -------------------------------------------------
+            # =================================================
 
-            st.write("### 🎯 Precision Agriculture")
+            st.write(
+                "### 🎯 Precision Agriculture"
+            )
+
 
             if status == "Disease Detected":
 
                 st.success(
-                    "🎯 Targeted treatment recommended for "
-                    "the detected disease zone."
-                )
-
-                st.write(
-                    "The detected location can be used as a "
-                    "precision-treatment waypoint."
+                    "🎯 Targeted treatment recommended "
+                    "for the detected disease zone."
                 )
 
                 st.write(
                     "**Treatment Mode:** Precision Spray"
                 )
 
+                st.write(
+                    "The detected GPS location can be "
+                    "used as a precision-treatment waypoint."
+                )
+
+
             elif status == "Healthy":
 
                 st.info(
-                    "No treatment required. Continue monitoring."
+                    "No treatment required. "
+                    "Continue monitoring."
                 )
+
 
             else:
 
@@ -306,21 +335,25 @@ if uploaded_file is not None:
                 )
 
 
-            # -------------------------------------------------
+            # =================================================
             # GPS
-            # -------------------------------------------------
+            # =================================================
 
-            st.write("### 📍 GPS Mission Data")
+            st.write(
+                "### 📍 GPS Mission Data"
+            )
 
             col1, col2 = st.columns(2)
 
             with col1:
+
                 st.metric(
                     "Latitude",
                     f"{latitude:.4f}"
                 )
 
             with col2:
+
                 st.metric(
                     "Longitude",
                     f"{longitude:.4f}"
@@ -335,7 +368,7 @@ if uploaded_file is not None:
         except Exception as e:
 
             st.error(
-                "Prediction failed."
+                "❌ Prediction failed."
             )
 
             st.exception(e)
